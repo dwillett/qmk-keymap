@@ -87,7 +87,11 @@ enum custom_keycodes {
 #define NAV_BSP LT(NAV, KC_BSPC)
 #define SYM_SPC LT(SYM, KC_SPC)
 #define FUN_ESC LT(FUN, KC_ESC)
+#define EXT_ENT LT(EXT, KC_ENT)
 
+// Other aliases
+#define ZOOMIN LGUI_T(KC_EQL)
+#define ZOOMOUT LGUI_T(KC_MINS)
 
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -102,7 +106,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                       KC_J   , KC_L   , KC_U   , KC_Y   , KC_SCLN, KC_BSLS,
                       KC_M   , HRM_N  , HRM_E  , HRM_I  , HRM_O  , KC_QUOT,
                       KC_K   , HRM_H  , KC_COMM, KC_DOT , KC_SLSH, OS_RSFT,
-             KC_ENT , SYM_SPC
+             EXT_ENT, SYM_SPC
   ),
 
   [NAV] = LAYOUT_LR(  // Navigation layer.
@@ -154,10 +158,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_C   , XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
                                                  _______, _______,
 
-                      KC_DEL , KC_MPLY, KC_MPRV, KC_MNXT, KC_MSTP, KC_EJCT,
-                      KC_CALC, KC_F7  , KC_F8  , KC_F9  , KC_F10 , KC_F13 ,
-                      KC_WHOM, KC_F4  , KC_F5  , KC_F6  , KC_F11 , KC_F14 ,
-                      KC_MYCM, KC_F1  , KC_F2  , KC_F3  , KC_F12 , KC_F15 ,
+                      KC_F16 , KC_MPLY, KC_MPRV, KC_MNXT, KC_MSTP, KC_EJCT,
+                      KC_F17 , KC_F7  , KC_F8  , KC_F9  , KC_F10 , KC_F13 ,
+                      ZOOMIN , KC_F4  , KC_F5  , KC_F6  , KC_F11 , KC_F14 ,
+                      ZOOMOUT, KC_F1  , KC_F2  , KC_F3  , KC_F12 , KC_F15 ,
              KC_VOLD, KC_VOLU
   ),
 
@@ -166,7 +170,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
     OM_SLOW, KC_LALT, KC_LCTL, KC_LSFT, SELLINE, XXXXXXX,
     _______, KC_LGUI, C(KC_V), C(KC_A), C(KC_C), C(KC_X),
-                                                 KC_WBAK, MS_BTN1,
+                                                 KC_DEL , MS_BTN1,
 
                       _______, _______, _______, _______, _______, _______,
                       OM_W_U , MS_BTN1, OM_U   , MS_BTN2, SRCHSEL, _______,
@@ -248,9 +252,8 @@ uint16_t get_quick_tap_term(uint16_t keycode, keyrecord_t* record) {
 }
 
 #ifdef CHORDAL_HOLD
-bool get_chordal_hold(
-        uint16_t tap_hold_keycode, keyrecord_t* tap_hold_record,
-        uint16_t other_keycode, keyrecord_t* other_record) {
+bool get_chordal_hold(uint16_t tap_hold_keycode, keyrecord_t* tap_hold_record,
+                      uint16_t other_keycode, keyrecord_t* other_record) {
   switch (tap_hold_keycode) {
     case NAV_BSP:
       return true;
@@ -263,8 +266,8 @@ bool get_chordal_hold(
 // Autocorrect (https://docs.qmk.fm/features/autocorrect)
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef AUTOCORRECT_ENABLE
-bool apply_autocorrect(uint8_t backspaces, const char* str,
-                       char* typo, char* correct) {
+bool apply_autocorrect(uint8_t backspaces, const char* str, char* typo,
+                       char* correct) {
   for (uint8_t i = 0; i < backspaces; ++i) {
     tap_code(KC_BSPC);
   }
@@ -423,8 +426,8 @@ static void lighting_set_palette(uint8_t palette) {
     lighting_cycle_3_state();
   }
   rgb_matrix_enable_noeeprom();
-  rgb_matrix_sethsv_noeeprom(
-      RGB_MATRIX_HUE_STEP * palette, 255, rgb_matrix_get_val());
+  rgb_matrix_sethsv_noeeprom(RGB_MATRIX_HUE_STEP * palette, 255,
+                             rgb_matrix_get_val());
 }
 
 static void lighting_preset(uint8_t effect, uint8_t palette) {
@@ -460,16 +463,18 @@ static void lighting_activity_trigger(void) {
 }
 
 static void lighting_task(void) {
-  if (!lighting.timer) { return; }  // Early return if sleeping.
+  if (!lighting.timer) {
+    return;
+  }  // Early return if sleeping.
   const uint32_t diff = timer_read32() - lighting.timer;
 
   if (lighting.val_start != lighting.val_end) {
     const uint8_t t = (diff <= 511) ? (uint8_t)(diff / 2) : 255;
 
     hsv_t hsv = rgb_matrix_get_hsv();
-    hsv.v = (t == 255)
-        ? lighting.val_end
-        : lerp8by8(lighting.val_start, lighting.val_end, ease8InOutCubic(t));
+    hsv.v = (t == 255) ? lighting.val_end
+                       : lerp8by8(lighting.val_start, lighting.val_end,
+                                  ease8InOutCubic(t));
     rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, hsv.v);
 
     if (t == 255) {  // Transition complete.
@@ -495,25 +500,19 @@ static void lighting_task(void) {
 #pragma message "dlog_record: enabled"
 
 KEYCODE_STRING_NAMES_USER(
-  KEYCODE_STRING_NAME(ARROW),
-  KEYCODE_STRING_NAME(UPDIR),
-  KEYCODE_STRING_NAME(STDCC),
-  KEYCODE_STRING_NAME(USRNAME),
-  KEYCODE_STRING_NAME(TMUXESC),
-  KEYCODE_STRING_NAME(SRCHSEL),
-  KEYCODE_STRING_NAME(SELWORD),
-  KEYCODE_STRING_NAME(SELWBAK),
-  KEYCODE_STRING_NAME(SELLINE),
-  KEYCODE_STRING_NAME(RGBBRI),
-  KEYCODE_STRING_NAME(RGBNEXT),
-  KEYCODE_STRING_NAME(RGBHUP),
-  KEYCODE_STRING_NAME(RGBHRND),
-  KEYCODE_STRING_NAME(RGBDEF1),
-  KEYCODE_STRING_NAME(RGBDEF2),
-);
+    KEYCODE_STRING_NAME(ARROW), KEYCODE_STRING_NAME(UPDIR),
+    KEYCODE_STRING_NAME(STDCC), KEYCODE_STRING_NAME(USRNAME),
+    KEYCODE_STRING_NAME(TMUXESC), KEYCODE_STRING_NAME(SRCHSEL),
+    KEYCODE_STRING_NAME(SELWORD), KEYCODE_STRING_NAME(SELWBAK),
+    KEYCODE_STRING_NAME(SELLINE), KEYCODE_STRING_NAME(RGBBRI),
+    KEYCODE_STRING_NAME(RGBNEXT), KEYCODE_STRING_NAME(RGBHUP),
+    KEYCODE_STRING_NAME(RGBHRND), KEYCODE_STRING_NAME(RGBDEF1),
+    KEYCODE_STRING_NAME(RGBDEF2), );
 
 static void dlog_record(uint16_t keycode, keyrecord_t* record) {
-  if (!debug_enable) { return; }
+  if (!debug_enable) {
+    return;
+  }
   uint8_t layer = read_source_layers_cache(record->event.key);
   bool is_tap_hold = IS_QK_MOD_TAP(keycode) || IS_QK_LAYER_TAP(keycode);
   xprintf("L%-2u ", layer);  // Log the layer.
@@ -523,9 +522,9 @@ static void dlog_record(uint16_t keycode, keyrecord_t* record) {
     xprintf("(%2u,%2u) ", record->event.key.row, record->event.key.col);
   }
   xprintf("%-4s %-7s %s\n",  // "(tap|hold) (press|release) <keycode>".
-      is_tap_hold ? (record->tap.count ? "tap" : "hold") : "",
-      record->event.pressed ? "press" : "release",
-      get_keycode_string(keycode));
+          is_tap_hold ? (record->tap.count ? "tap" : "hold") : "",
+          record->event.pressed ? "press" : "release",
+          get_keycode_string(keycode));
 }
 #else
 #pragma message "dlog_record: disabled"
@@ -545,16 +544,12 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
 #ifdef STATUS_LED_2
 // LED 2 indicates when Sentence case is in primed to capitalize the next key.
-void sentence_case_primed(bool primed) {
-  STATUS_LED_2(primed);
-}
+void sentence_case_primed(bool primed) { STATUS_LED_2(primed); }
 #endif  // STATUS_LED_2
 
 #ifdef STATUS_LED_3
 // LED 3 indicates when Caps word is active.
-void caps_word_set_user(bool active) {
-  STATUS_LED_3(active);
-}
+void caps_word_set_user(bool active) { STATUS_LED_3(active); }
 #endif  // STATUS_LED_3
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -564,7 +559,7 @@ void caps_word_set_user(bool active) {
 void keyboard_post_init_user(void) {
 #if RGB_MATRIX_ENABLE
   lighting_init();
-#endif // RGB_MATRIX_ENABLE
+#endif  // RGB_MATRIX_ENABLE
 
   // Play MUSHROOM_SOUND two seconds after init, if defined and audio enabled.
 #if defined(AUDIO_ENABLE) && defined(MUSHROOM_SOUND)
@@ -574,7 +569,7 @@ void keyboard_post_init_user(void) {
     return 0;
   }
   defer_exec(2000, play_init_song_callback, NULL);
-#endif // defined(AUDIO_ENABLE) && defined(MUSHROOM_SOUND)
+#endif  // defined(AUDIO_ENABLE) && defined(MUSHROOM_SOUND)
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t* record) {
@@ -591,4 +586,3 @@ void housekeeping_task_user(void) {
   lighting_task();
 #endif  // RGB_MATRIX_ENABLE
 }
-
